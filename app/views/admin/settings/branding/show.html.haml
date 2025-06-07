@@ -1,72 +1,58 @@
-- content_for :page_title do
-  = t('admin.settings.branding.title')
+-# app/views/admin/settings/branding/show.html.haml
+-# Mastodon 관리자 브랜딩 설정 (로고/배경/컬러/커스텀 CSS 등)
 
-- content_for :heading do
-  %h2= t('admin.settings.title')
-  = render partial: 'admin/settings/shared/links'
+%h2= t('admin.settings.branding.title')
 
-= simple_form_for @admin_settings, url: admin_settings_branding_path, html: { method: :patch } do |f|
-  = render 'shared/error_messages', object: @admin_settings
-
-  %p.lead= t('admin.settings.branding.preamble')
-
+= simple_form_for @instance, url: admin_settings_branding_path, html: { multipart: true } do |f|
   .fields-group
-    = f.input :site_title,
-              wrapper: :with_label
+    .field
+      = f.label :header_logo, t('admin.settings.branding.header_logo')
+      = f.input :header_logo, as: :file, hint: @instance.header_logo.attached? ? image_tag(url_for(@instance.header_logo), height: 64) : nil
 
-  .fields-row
-    .fields-row__column.fields-row__column-6.fields-group
-      = f.input :site_contact_username,
-                wrapper: :with_label
-    .fields-row__column.fields-row__column-6.fields-group
-      = f.input :site_contact_email,
-                wrapper: :with_label
+    .field
+      = f.label :favicon, t('admin.settings.branding.favicon')
+      = f.input :favicon, as: :file, hint: @instance.favicon.attached? ? image_tag(url_for(@instance.favicon), height: 32) : nil
 
-  .fields-group
-    = f.input :site_short_description,
-              as: :text,
-              input_html: { rows: 2, maxlength: Form::AdminSettings::DESCRIPTION_LIMIT },
-              wrapper: :with_block_label
+    .field
+      = f.label :background_image, t('admin.settings.branding.background_image')
+      = f.input :background_image, as: :file, hint: @instance.background_image.attached? ? image_tag(url_for(@instance.background_image), height: 64) : nil
 
-  .fields-row
-    .fields-row__column.fields-row__column-6.fields-group
-      = f.input :thumbnail,
-                as: :file,
-                wrapper: :with_block_label
-    .fields-row__column.fields-row__column-6.fields-group
-      - if @admin_settings.thumbnail.persisted?
-        = image_tag @admin_settings.thumbnail.file.url(:'@1x'), class: 'fields-group__thumbnail'
-        = link_to admin_site_upload_path(@admin_settings.thumbnail), data: { method: :delete }, class: 'link-button link-button--destructive' do
-          = material_symbol 'delete'
-          = t('admin.site_uploads.delete')
+    .field
+      = f.label :primary_color, t('admin.settings.branding.primary_color')
+      = f.input :primary_color
 
-  .fields-row
-    .fields-row__column.fields-row__column-6.fields-group
-      = f.input :favicon,
-                as: :file,
-                input_html: { accept: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].join(',') },
-                wrapper: :with_block_label
+    .field
+      = f.label :accent_color, t('admin.settings.branding.accent_color')
+      = f.input :accent_color
 
-    .fields-row__column.fields-row__column-6.fields-group
-      - if @admin_settings.favicon.persisted?
-        = image_tag @admin_settings.favicon.file.url('48'), class: 'fields-group__thumbnail'
-        = link_to admin_site_upload_path(@admin_settings.favicon), data: { method: :delete }, class: 'link-button link-button--destructive' do
-          = material_symbol 'delete'
-          = t('admin.site_uploads.delete')
+    .field
+      = f.label :background_color, t('admin.settings.branding.background_color')
+      = f.input :background_color
 
-  .fields-row
-    .fields-row__column.fields-row__column-6.fields-group
-      = f.input :app_icon,
-                as: :file,
-                input_html: { accept: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].join(',') },
-                wrapper: :with_block_label
+    .field
+      = f.label :theme, t('admin.settings.branding.theme')
+      = f.input :theme
 
-    .fields-row__column.fields-row__column-6.fields-group
-      - if @admin_settings.app_icon.persisted?
-        = image_tag @admin_settings.app_icon.file.url('48'), class: 'fields-group__thumbnail'
-        = link_to admin_site_upload_path(@admin_settings.app_icon), data: { method: :delete }, class: 'link-button link-button--destructive' do
-          = material_symbol 'delete'
-          = t('admin.site_uploads.delete')
+    .field
+      = f.label :description, t('admin.settings.branding.description')
+      = f.input :description
+
+    / ===========================
+    / 커스텀 CSS 입력란 (여기 추가)
+    .field
+      = f.label :custom_css, "Custom CSS (site-wide)"
+      = f.text_area :custom_css, rows: 10, class: "form-control"
+      %small.help-block 사이트 전체에 바로 적용되는 CSS를 입력하세요.
+    / ===========================
 
   .actions
-    = f.button :button, t('generic.save_changes'), type: :submit
+    = f.button :submit, t('admin.settings.save_changes'), class: "button is-primary"
+
+- if flash[:notice]
+  .flash.notice= flash[:notice]
+
+- if flash[:alert]
+  .flash.alert= flash[:alert]
+
+/ 기타 정보 및 안내(필요시)
+/ %p= t('admin.settings.branding.info')
