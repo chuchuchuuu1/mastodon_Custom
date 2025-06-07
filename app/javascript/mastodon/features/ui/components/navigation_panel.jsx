@@ -3,6 +3,10 @@ import PropTypes from 'prop-types';
 import { injectIntl, defineMessages } from 'react-intl';
 import ColumnLink from './column_link';
 
+// 만약 unreadDMCount를 props 또는 상태에서 받아온다면 아래처럼 선언
+// 예시: const unreadDMCount = 3;
+const unreadDMCount = 3; // ← 실제 서비스에서는 상태나 props에서 받아야 함
+
 const messages = defineMessages({
   home: { id: 'navigation.home', defaultMessage: 'Home' },
   notifications: { id: 'navigation.notifications', defaultMessage: 'Notifications' },
@@ -33,6 +37,7 @@ const NavigationPanel = ({ intl }) => (
       icon="envelope"
       to="/direct"
       label={intl.formatMessage(messages.direct)}
+      badge={unreadDMCount > 0 ? unreadDMCount : null} // 뱃지로 숫자 표시
     />
     <ColumnLink
       icon="star"
@@ -44,7 +49,6 @@ const NavigationPanel = ({ intl }) => (
       to="/bookmarks"
       label={intl.formatMessage(messages.bookmarks)}
     />
-    {/* 필요시 다른 메뉴도 아래에 추가 */}
     <ColumnLink
       icon="hash"
       to="/explore"
