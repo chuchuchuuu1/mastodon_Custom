@@ -131,8 +131,6 @@ class Status extends ImmutablePureComponent {
     ...WithOptionalRouterPropTypes,
   };
 
-  // Avoid checking props that are functions (and whose equality will always
-  // evaluate to false. See react-immutable-pure-component for usage.
   updateOnProps = [
     'status',
     'account',
@@ -148,11 +146,6 @@ class Status extends ImmutablePureComponent {
   };
 
   componentDidUpdate (prevProps) {
-    // This will potentially cause a wasteful redraw, but in most cases `Status` components are used
-    // with a `key` directly depending on their `id`, preventing re-use of the component across
-    // different IDs.
-    // But just in case this does change, reset the state on status change.
-
     if (this.props.status?.get('id') !== prevProps.status?.get('id')) {
       this.setState({
         showMedia: defaultMediaVisibility(this.props.status) && !(this.context?.hideMediaByDefault),
@@ -176,11 +169,9 @@ class Status extends ImmutablePureComponent {
   };
 
   handleHeaderClick = e => {
-    // Only handle clicks on the empty space above the content
     if (e.target !== e.currentTarget && e.detail >= 1) {
       return;
     }
-
     this.handleClick(e);
   };
 
@@ -200,7 +191,7 @@ class Status extends ImmutablePureComponent {
     const attachments = this._properStatus().get('media_attachments');
 
     if (attachments.getIn([0, 'type']) === 'video') {
-      return `${attachments.getIn([0, 'meta', 'original', 'width'])} / ${attachments.getIn([0, 'meta', 'original', 'height'])}`;
+      return `${attachments.getIn(['meta', 'original', 'width'])} / ${attachments.getIn(['meta', 'original', 'height'])}`;
     } else if (attachments.getIn([0, 'type']) === 'audio') {
       return '16 / 9';
     } else {
@@ -376,6 +367,11 @@ class Status extends ImmutablePureComponent {
 
     let { status, account, ...other } = this.props;
 
+    // === DM(다이렉트) 포스트는 타임라인에서 숨김 ===
+    if (status && status.get('visibility') === 'direct') {
+      return null;
+    }
+
     if (status === null) {
       return null;
     }
@@ -461,149 +457,4 @@ class Status extends ImmutablePureComponent {
                 cacheWidth={this.props.cacheMediaWidth}
                 defaultWidth={this.props.cachedMediaWidth}
                 visible={this.state.showMedia}
-                onToggleVisibility={this.handleToggleMediaVisibility}
-                matchedFilters={status.get('matched_media_filters')}
-              />
-            )}
-          </Bundle>
-        );
-      } else if (status.getIn(['media_attachments', 0, 'type']) === 'audio') {
-        const attachment = status.getIn(['media_attachments', 0]);
-        const description = attachment.getIn(['translation', 'description']) || attachment.get('description');
-
-        media = (
-          <Bundle fetchComponent={Audio} loading={this.renderLoadingAudioPlayer} >
-            {Component => (
-              <Component
-                src={attachment.get('url')}
-                alt={description}
-                lang={language}
-                poster={attachment.get('preview_url') || status.getIn(['account', 'avatar_static'])}
-                backgroundColor={attachment.getIn(['meta', 'colors', 'background'])}
-                foregroundColor={attachment.getIn(['meta', 'colors', 'foreground'])}
-                accentColor={attachment.getIn(['meta', 'colors', 'accent'])}
-                duration={attachment.getIn(['meta', 'original', 'duration'], 0)}
-                deployPictureInPicture={pictureInPicture.get('available') ? this.handleDeployPictureInPicture : undefined}
-                sensitive={status.get('sensitive')}
-                blurhash={attachment.get('blurhash')}
-                visible={this.state.showMedia}
-                onToggleVisibility={this.handleToggleMediaVisibility}
-                matchedFilters={status.get('matched_media_filters')}
-              />
-            )}
-          </Bundle>
-        );
-      } else if (status.getIn(['media_attachments', 0, 'type']) === 'video') {
-        const attachment = status.getIn(['media_attachments', 0]);
-        const description = attachment.getIn(['translation', 'description']) || attachment.get('description');
-
-        media = (
-          <Bundle fetchComponent={Video} loading={this.renderLoadingVideoPlayer} >
-            {Component => (
-              <Component
-                preview={attachment.get('preview_url')}
-                frameRate={attachment.getIn(['meta', 'original', 'frame_rate'])}
-                aspectRatio={`${attachment.getIn(['meta', 'original', 'width'])} / ${attachment.getIn(['meta', 'original', 'height'])}`}
-                blurhash={attachment.get('blurhash')}
-                src={attachment.get('url')}
-                alt={description}
-                lang={language}
-                sensitive={status.get('sensitive')}
-                onOpenVideo={this.handleOpenVideo}
-                deployPictureInPicture={pictureInPicture.get('available') ? this.handleDeployPictureInPicture : undefined}
-                visible={this.state.showMedia}
-                onToggleVisibility={this.handleToggleMediaVisibility}
-                matchedFilters={status.get('matched_media_filters')}
-              />
-            )}
-          </Bundle>
-        );
-      }
-    } else if (status.get('card') && !status.get('quote')) {
-      media = (
-        <Card
-          onOpenMedia={this.handleOpenMedia}
-          card={status.get('card')}
-          compact
-          sensitive={status.get('sensitive')}
-        />
-      );
-    }
-
-    if (account === undefined || account === null) {
-      statusAvatar = <Avatar account={status.get('account')} size={avatarSize} />;
-    } else {
-      statusAvatar = <AvatarOverlay account={status.get('account')} friend={account} />;
-    }
-
-    const {statusContentProps, hashtagBar} = getHashtagBarForStatus(status);
-
-    return (
-      <HotKeys handlers={handlers} tabIndex={unfocusable ? null : -1}>
-        <div className={classNames('status__wrapper', `status__wrapper-${status.get('visibility')}`, { 'status__wrapper-reply': !!status.get('in_reply_to_id'), unread, focusable: !this.props.muted })} tabIndex={this.props.muted || unfocusable ? null : 0} data-featured={featured ? 'true' : null} aria-label={textForScreenReader(intl, status, rebloggedByText)} ref={this.handleRef} data-nosnippet={status.getIn(['account', 'noindex'], true) || undefined}>
-          {!skipPrepend && prepend}
-
-          <div
-            className={
-              classNames('status', `status-${status.get('visibility')}`,
-              {
-                'status-reply': !!status.get('in_reply_to_id'),
-                'status--in-thread': !!rootId,
-                'status--first-in-thread': previousId && (!connectUp || connectToRoot), muted: this.props.muted,
-                'status--is-quote': isQuotedPost,
-                'status--has-quote': !!status.get('quote'),
-              })
-            }
-            data-id={status.get('id')}
-          >
-            {(connectReply || connectUp || connectToRoot) && <div className={classNames('status__line', { 'status__line--full': connectReply, 'status__line--first': !status.get('in_reply_to_id') && !connectToRoot })} />}
-
-            <div onClick={this.handleHeaderClick} onAuxClick={this.handleHeaderClick} className='status__info'>
-              <Link to={`/@${status.getIn(['account', 'acct'])}/${status.get('id')}`} className='status__relative-time'>
-                <span className='status__visibility-icon'><VisibilityIcon visibility={status.get('visibility')} /></span>
-                <RelativeTimestamp timestamp={status.get('created_at')} />{status.get('edited_at') && <abbr title={intl.formatMessage(messages.edited, { date: intl.formatDate(status.get('edited_at'), { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }) })}> *</abbr>}
-              </Link>
-
-              <Link to={`/@${status.getIn(['account', 'acct'])}`} title={status.getIn(['account', 'acct'])} data-hover-card-account={status.getIn(['account', 'id'])} className='status__display-name'>
-                <div className='status__avatar'>
-                  {statusAvatar}
-                </div>
-
-                <DisplayName account={status.get('account')} />
-              </Link>
-            </div>
-
-            {matchedFilters && <FilterWarning title={matchedFilters.join(', ')} expanded={this.state.showDespiteFilter} onClick={this.handleFilterToggle} />}
-
-            {(status.get('spoiler_text').length > 0 && (!matchedFilters || this.state.showDespiteFilter)) && <ContentWarning text={status.getIn(['translation', 'spoilerHtml']) || status.get('spoilerHtml')} expanded={expanded} onClick={this.handleExpandedToggle} />}
-
-            {expanded && (
-              <>
-                <StatusContent
-                  status={status}
-                  onClick={this.handleClick}
-                  onTranslate={this.handleTranslate}
-                  collapsible
-                  onCollapsedToggle={this.handleCollapsedToggle}
-                  {...statusContentProps}
-                />
-
-                {children}
-
-                {media}
-                {hashtagBar}
-              </>
-            )}
-
-            {!isQuotedPost &&
-              <StatusActionBar scrollKey={scrollKey} status={status} account={account}  {...other} />
-            }
-          </div>
-        </div>
-      </HotKeys>
-    );
-  }
-
-}
-
-export default withOptionalRouter(injectIntl(Status));
+                onToggleVisibility={
