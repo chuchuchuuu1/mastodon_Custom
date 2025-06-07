@@ -19,8 +19,6 @@ import { PictureInPicturePlaceholder } from 'mastodon/components/picture_in_pict
 import { withOptionalRouter, WithOptionalRouterPropTypes } from 'mastodon/utils/react_router';
 
 import Card from '../features/status/components/card';
-// We use the component (and not the container) since we do not want
-// to use the progress bar to show download progress
 import Bundle from '../features/ui/components/bundle';
 import { MediaGallery, Video, Audio } from '../features/ui/util/async-components';
 import { SensitiveMediaContext } from '../features/ui/util/sensitive_media_context';
@@ -128,6 +126,7 @@ class Status extends ImmutablePureComponent {
       inUse: PropTypes.bool,
       available: PropTypes.bool,
     }),
+    showDirect: PropTypes.bool, // DM 분리용 추가 prop
     ...WithOptionalRouterPropTypes,
   };
 
@@ -138,6 +137,7 @@ class Status extends ImmutablePureComponent {
     'hidden',
     'unread',
     'pictureInPicture',
+    'showDirect',
   ];
 
   state = {
@@ -191,7 +191,7 @@ class Status extends ImmutablePureComponent {
     const attachments = this._properStatus().get('media_attachments');
 
     if (attachments.getIn([0, 'type']) === 'video') {
-      return `${attachments.getIn(['meta', 'original', 'width'])} / ${attachments.getIn(['meta', 'original', 'height'])}`;
+      return `${attachments.getIn([0, 'meta', 'original', 'width'])} / ${attachments.getIn([0, 'meta', 'original', 'height'])}`;
     } else if (attachments.getIn([0, 'type']) === 'audio') {
       return '16 / 9';
     } else {
@@ -367,8 +367,12 @@ class Status extends ImmutablePureComponent {
 
     let { status, account, ...other } = this.props;
 
-    // === DM(다이렉트) 포스트는 타임라인에서 숨김 ===
-    if (status && status.get('visibility') === 'direct') {
+    // === DM(다이렉트) 포스트는, showDirect가 true가 아닐 때 숨김 ===
+    if (
+      status &&
+      status.get('visibility') === 'direct' &&
+      !this.props.showDirect
+    ) {
       return null;
     }
 
