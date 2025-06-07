@@ -1,6 +1,27 @@
 # This file contains default values, and does not need to be edited. All
 # important settings can be changed from the admin interface.
 
+# ======================
+# Mastodon settings.yml
+# ======================
+
+# 기본 도메인 및 보안 설정
+local_domain: example.com
+authorized_fetch: true
+
+# ----------------------
+# 비로그인 사용자의 타임라인/게시글(툿) 접근 차단 (핵심 옵션)
+# ----------------------
+require_authenticated_user_for_timeline: true          # 홈/공개/연합 타임라인, 해시태그 등 모두 로그인 필요
+public_timeline: false                                # 공개 타임라인 자체 비활성화 (권장)
+require_authenticated_user_for_public_timeline: true   # 공개 타임라인에도 로그인 필요 (권장, 버전별 지원)
+require_authenticated_user_for_public_profile: true   # 프로필은 공개 (원하면 true로 변경)
+
+# ----------------------
+# 추가 선택 옵션 (필요한 경우만)
+# ----------------------
+public_user_profiles: false     # 프로필만 공개 (필요시 false)
+
 defaults: &defaults
   site_title: Mastodon
   site_short_description: ''
